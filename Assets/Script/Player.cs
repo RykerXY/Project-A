@@ -1,153 +1,166 @@
-using System;
+using System.Collections;
 using UnityEngine;
 
 public class Player : MonoBehaviour
 {
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
-    public float bounceForce = 5f;
+    public float maxJumpForce = 15f;
+    public float chargeSpeed = 5f;
+    public float jumpForce = 0f;
+    public float doubleJumpForce = 10f;
+    public float doubleJumpCooldown = 0.2f;
+    [Header("Stun Settings")]
+    public float knockbackDuration = 0.5f;
+    public float knockbackForce = 5f;
+    public float stunDuration = 2f;
+    public float fallHeightThreshold = 10f;
+    private bool isStunned = false;
+    private float highestPoint;
+    [Header("Ground Collider Layer")]
+    public LayerMask collisionLayer;
 
-    [Header("Jump Settings")]
-    public float maxJumpForce = 20f;  // Maximum jump strength
-    public float minJumpForce = 5f;   // Minimum jump strength
-    public float chargeTime = 1f;     // Time to reach max charge
+    private bool isGrounded;
+    private bool isJumping;
+    private bool canDoubleJump;
+    private bool isKnockback;
 
-    [Header("Ground Check Settings")]
-    public Transform groundCheck;     // Transform for the ground check position
-    public float groundCheckRadius = 0.1f; // Radius for the ground check
-    public LayerMask groundLayer;     // Layer to identify as ground
+    private float doubleJumpTime;
 
     private Rigidbody2D rb;
-    private bool isGrounded = false;
-    private bool isCharging = false;
-    private float currentJumpForce = 0f;
-    private float chargeTimer = 0f;
-
-    private bool canDoubleJump = false;
-    private bool canMove = true;
+    private CapsuleCollider2D capsuleCollider;
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        capsuleCollider = GetComponent<CapsuleCollider2D>();
+        highestPoint = transform.position.y;
     }
 
     void Update()
     {
-        // Ground check using raycast
-        CheckGround();
-
-        // Handle movement (only if not charging a jump)
-        if (!isCharging && canMove)
+        isGrounded = Physics2D.IsTouchingLayers(capsuleCollider, LayerMask.GetMask("Ground"));
+        
+        if (!isKnockback)
         {
-            HandleMovement();
+            if (isGrounded && !isJumping)
+            {
+                Move();
+            }
+            Jump();
         }
+        if (!isStunned && rb.linearVelocity.y > 0)
+        {
+            highestPoint = Mathf.Max(highestPoint, transform.position.y);
+        }
+    }
 
-        // Handle jump charging
+    void Move()
+    {
+        if (!isKnockback && !isStunned)
+        {
+            float moveInput = Input.GetAxis("Horizontal");
+
+            if (!isJumping)
+            {
+                Vector2 movement = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
+                rb.linearVelocity = movement;
+            }
+        }
+    }
+
+    void Jump()
+    {
         if (Input.GetButtonDown("Jump") && isGrounded)
         {
-            StartChargingJump();
+            isJumping = true;
+            jumpForce = 0f;
+            canDoubleJump = true;
         }
 
-        if (Input.GetButton("Jump") && isCharging)
+        if (Input.GetButton("Jump") && isJumping)
         {
-            ChargeJump();
+            if (jumpForce < maxJumpForce)
+            {
+                jumpForce += chargeSpeed * Time.deltaTime;
+            }
         }
 
-        if (Input.GetButtonUp("Jump") && isCharging)
+        if (Input.GetButtonUp("Jump") && isJumping)
         {
-            PerformJump();
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
+            isJumping = false;
         }
 
-        // Double jump when not grounded
-        if (Input.GetButtonDown("Jump") && canDoubleJump && !isGrounded)
+        if (!isGrounded && canDoubleJump && Input.GetButtonDown("Jump"))
         {
-            DoubleJump();
+            float moveDirection = Input.GetAxis("Horizontal");
+            rb.linearVelocity = new Vector2(moveDirection * moveSpeed, doubleJumpForce);
+            canDoubleJump = false;
+            doubleJumpTime = Time.time;
         }
-        if(isGrounded)
+    }
+
+    void OnCollisionEnter2D(Collision2D collision)
+    {
+        if (!isGrounded && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
-            canMove = true;
+            
+            Vector2 contactPoint = collision.contacts[0].normal;
+
+            if (Mathf.Abs(contactPoint.x) > Mathf.Abs(contactPoint.y))
+            {
+                StartCoroutine(ApplyKnockback(contactPoint));
+            }
         }
-    }
-
-    private void HandleMovement()
-    {
-        float moveInput = Input.GetAxis("Horizontal");
-        rb.linearVelocity = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
-
-        // Flip the sprite based on the movement direction
-        if (moveInput > 0)
+        // ตรวจสอบการชนกับพื้น
+        if (collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
-            transform.localScale = new Vector3(0.5f, 0.5f, 0.5f); // Facing right
+            float fallDistance = highestPoint - transform.position.y;
+
+            if (fallDistance > fallHeightThreshold)
+            {
+                StartCoroutine(StunPlayer());
+            }
+
+            // รีเซ็ตจุดสูงสุดหลังจากชนพื้น
+            highestPoint = transform.position.y;
         }
-        else if (moveInput < 0)
+    }
+
+    IEnumerator ApplyKnockback(Vector2 contactPoint)
+    {
+        Debug.Log($"Contact Point: {contactPoint}, Knockback Force: {knockbackForce}");
+
+        isKnockback = true;
+        if(contactPoint.x < 0)
         {
-            transform.localScale = new Vector3(-0.5f, 0.5f, 0.5f); // Facing left
+            Vector2 knockbackDirection = new Vector2(-1, 0);
+            rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
         }
-    }
-
-    private void StartChargingJump()
-    {
-        isCharging = true;
-        chargeTimer = 0f;
-        currentJumpForce = minJumpForce;
-
-        // Stop player movement when charging starts
-        rb.linearVelocity = new Vector2(0f, rb.linearVelocity.y);
-    }
-
-    private void ChargeJump()
-    {
-        chargeTimer += Time.deltaTime;
-        currentJumpForce = Mathf.Lerp(minJumpForce, maxJumpForce, chargeTimer / chargeTime);
-        currentJumpForce = Mathf.Clamp(currentJumpForce, minJumpForce, maxJumpForce);
-    }
-
-    private void PerformJump()
-    {
-        isCharging = false;
-
-        // Apply the jump force
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, currentJumpForce);
-        isGrounded = false;
-        canDoubleJump = true;
-    }
-
-    private void DoubleJump()
-    {
-        isCharging = false;
-
-        // Apply the jump force
-        rb.linearVelocity = new Vector2(rb.linearVelocity.x, minJumpForce);
-        isGrounded = false;
-        canDoubleJump = false;
-    }
-
-    private void CheckGround()
-    {
-        // Perform a circle cast (raycast with radius) to check if the player is grounded
-        isGrounded = Physics2D.OverlapCircle(groundCheck.position, groundCheckRadius, groundLayer);
-    }
-
-    private void OnDrawGizmos()
-    {
-        // Draw the ground check circle in the editor
-        if (groundCheck != null)
+        if(contactPoint.x > 0)
         {
-            Gizmos.color = Color.red;
-            Gizmos.DrawWireSphere(groundCheck.position, groundCheckRadius);
+            Vector2 knockbackDirection = new Vector2(1, 0);
+            rb.AddForce(knockbackDirection * knockbackForce, ForceMode2D.Impulse);
         }
-    }
-    private void OnCollisionEnter2D(Collision2D collision) {
-        Debug.Log("Collision with: " + collision.gameObject.name);
         
-        if(!isGrounded)
-        {
-            canMove = false;
-            // Calculate bounce direction
-            Vector2 bounceDirection = (transform.position - collision.transform.position).normalized;
 
-            // Apply bounce force
-            rb.AddForce(bounceDirection * bounceForce, ForceMode2D.Impulse);
+        yield return new WaitForSeconds(knockbackDuration);
+
+        isKnockback = false;
+    }
+    private IEnumerator StunPlayer()
+    {
+        if (!isStunned)
+        {
+            isStunned = true;
+            Debug.Log("Player is stunned!");
+            rb.linearVelocity = Vector2.zero;
+
+            yield return new WaitForSeconds(stunDuration);
+
+            isStunned = false;
+            Debug.Log("Player is no longer stunned!");
         }
     }
 }
