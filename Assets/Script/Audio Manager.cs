@@ -1,0 +1,31 @@
+using UnityEngine;
+
+public class AudioManager : MonoBehaviour
+{
+    public AudioSource audioSource;
+    public AudioClip BGM1;
+    public AudioClip BGM2;
+    public AudioClip BGM3;
+    
+    public void PlayBGM1()
+    {
+        audioSource.clip = BGM1;
+        audioSource.Play();
+    }
+    public void PlayBGM2()
+    {
+        audioSource.clip = BGM2;
+        audioSource.Play();
+    }
+    public void PlayBGM3()
+    {
+        audioSource.clip = BGM3;
+        audioSource.Play();
+    }
+    
+    // Utilities
+    public void StopAudio()
+    {
+        audioSource.Stop();
+    }
+}

@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using UnityEngine;
 
@@ -19,22 +20,26 @@ public class Player : MonoBehaviour
     private float highestPoint;
     [Header("Ground Collider Layer")]
     public LayerMask collisionLayer;
+    [Header("Audio Source")]
+    public CharacterAudio characterAudio;
 
     private bool isGrounded;
     private bool isJumping;
     private bool canDoubleJump;
     private bool isKnockback;
+    bool isChargJumpSound = false;
 
     private float doubleJumpTime;
 
     private Rigidbody2D rb;
     private CapsuleCollider2D capsuleCollider;
-
+    
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         capsuleCollider = GetComponent<CapsuleCollider2D>();
         highestPoint = transform.position.y;
+        characterAudio.playOnLoad();
     }
 
     void Update()
@@ -61,6 +66,25 @@ public class Player : MonoBehaviour
         {
             float moveInput = Input.GetAxis("Horizontal");
 
+            //หากตัวละครเดิน
+            if(moveInput >= 0.5f || moveInput <= -0.5f) 
+            {
+                if(!characterAudio.audioSource.isPlaying)
+                {
+                Debug.Log(moveInput);
+                characterAudio.PlayWalkSound();
+                }
+            }
+            //หากตัวละครไม่เดิน
+            else if(moveInput >= -0.5f || moveInput <= 0.5f && characterAudio.isPlaying()) 
+            {
+                if(characterAudio.getTime() >= characterAudio.getLength())
+                {
+                    Debug.Log("Audio Stop!");
+                    characterAudio.StopAudio();
+                }
+            }
+
             if (!isJumping)
             {
                 Vector2 movement = new Vector2(moveInput * moveSpeed, rb.linearVelocity.y);
@@ -80,6 +104,17 @@ public class Player : MonoBehaviour
 
         if (Input.GetButton("Jump") && isJumping)
         {
+            if(!isChargJumpSound)
+            {
+                Debug.Log(isChargJumpSound);
+                characterAudio.PlayChargeJumpSound();
+                isChargJumpSound = true;
+            }
+            else if(isChargJumpSound && !characterAudio.isPlaying())
+            {
+                isChargJumpSound = false;
+            }
+            
             if (jumpForce < maxJumpForce)
             {
                 jumpForce += chargeSpeed * Time.deltaTime;
@@ -88,12 +123,16 @@ public class Player : MonoBehaviour
 
         if (Input.GetButtonUp("Jump") && isJumping)
         {
+            characterAudio.PlayJumpSound();
+
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
             isJumping = false;
         }
 
         if (!isGrounded && canDoubleJump && Input.GetButtonDown("Jump"))
         {
+            characterAudio.PlayDoubleJumpSound();
+
             float moveDirection = Input.GetAxis("Horizontal");
             rb.linearVelocity = new Vector2(moveDirection * moveSpeed, doubleJumpForce);
             canDoubleJump = false;
@@ -103,6 +142,7 @@ public class Player : MonoBehaviour
 
     void OnCollisionEnter2D(Collision2D collision)
     {
+        // ชนกำแพง
         if (!isGrounded && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
             
@@ -113,9 +153,15 @@ public class Player : MonoBehaviour
                 StartCoroutine(ApplyKnockback(contactPoint));
             }
         }
-        // ตรวจสอบการชนกับพื้น
+        // ตกจากที่สูง
         if (collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
+            Vector2 contactPoint = collision.contacts[0].normal;
+            if (Mathf.Abs(contactPoint.x) < Mathf.Abs(contactPoint.y))
+            {
+                characterAudio.PlayLandingSound();
+            }
+            
             float fallDistance = highestPoint - transform.position.y;
 
             if (fallDistance > fallHeightThreshold)
@@ -123,14 +169,14 @@ public class Player : MonoBehaviour
                 StartCoroutine(StunPlayer());
             }
 
-            // รีเซ็ตจุดสูงสุดหลังจากชนพื้น
             highestPoint = transform.position.y;
         }
     }
 
     IEnumerator ApplyKnockback(Vector2 contactPoint)
     {
-        Debug.Log($"Contact Point: {contactPoint}, Knockback Force: {knockbackForce}");
+        //Debug.Log($"Contact Point: {contactPoint}, Knockback Force: {knockbackForce}");
+        characterAudio.PlayBounceSound();
 
         isKnockback = true;
         if(contactPoint.x < 0)
@@ -151,6 +197,8 @@ public class Player : MonoBehaviour
     }
     private IEnumerator StunPlayer()
     {
+        characterAudio.PlayDazzlingSound();
+
         if (!isStunned)
         {
             isStunned = true;
