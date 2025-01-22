@@ -4,6 +4,8 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    [Header("Animator")]
+    public Animator animator;
     [Header("Movement Settings")]
     public float moveSpeed = 5f;
     public float maxJumpForce = 15f;
@@ -16,8 +18,6 @@ public class Player : MonoBehaviour
     public float knockbackForce = 5f;
     public float stunDuration = 2f;
     public float fallHeightThreshold = 10f;
-    private bool isStunned = false;
-    private float highestPoint;
     [Header("Ground Collider Layer")]
     public LayerMask collisionLayer;
     [Header("Audio Source")]
@@ -27,9 +27,12 @@ public class Player : MonoBehaviour
     private bool isJumping;
     private bool canDoubleJump;
     private bool isKnockback;
-    bool isChargJumpSound = false;
+    private bool isStunned = false;
+    private float highestPoint;
+    private bool isChargJumpSound = false;
 
     private float doubleJumpTime;
+    [SerializeField]private SpriteRenderer spriteRenderer;
 
     private Rigidbody2D rb;
     private CapsuleCollider2D capsuleCollider;
@@ -45,7 +48,6 @@ public class Player : MonoBehaviour
     void Update()
     {
         isGrounded = Physics2D.IsTouchingLayers(capsuleCollider, LayerMask.GetMask("Ground"));
-        
         if (!isKnockback)
         {
             if (isGrounded && !isJumping)
@@ -67,7 +69,7 @@ public class Player : MonoBehaviour
             float moveInput = Input.GetAxis("Horizontal");
 
             //หากตัวละครเดิน
-            if(moveInput >= 0.5f || moveInput <= -0.5f) 
+            if(moveInput >= 0.1f || moveInput <= -0.1f) 
             {
                 if(!characterAudio.audioSource.isPlaying)
                 {
@@ -76,13 +78,29 @@ public class Player : MonoBehaviour
                 }
             }
             //หากตัวละครไม่เดิน
-            else if(moveInput >= -0.5f || moveInput <= 0.5f && characterAudio.isPlaying()) 
+            else if(moveInput >= -0.1f || moveInput <= 0.1f && characterAudio.isPlaying()) 
             {
                 if(characterAudio.getTime() >= characterAudio.getLength())
                 {
                     Debug.Log("Audio Stop!");
                     characterAudio.StopAudio();
                 }
+            }
+            if(moveInput == 0.000)
+            {
+                animator.SetBool("isMoving", false);
+            }
+            if(moveInput != 0)
+            {
+                animator.SetBool("isMoving", true);
+            }
+            if (Input.GetKey(KeyCode.D)) // เดินไปทางขวา
+            {
+                spriteRenderer.flipX = false;
+            }
+            else if (Input.GetKey(KeyCode.A)) // เดินไปทางซ้าย
+            {
+                spriteRenderer.flipX = true;
             }
 
             if (!isJumping)
@@ -104,6 +122,7 @@ public class Player : MonoBehaviour
 
         if (Input.GetButton("Jump") && isJumping)
         {
+            animator.SetBool("isChargeJump", true);
             if(!isChargJumpSound)
             {
                 Debug.Log(isChargJumpSound);
@@ -123,6 +142,8 @@ public class Player : MonoBehaviour
 
         if (Input.GetButtonUp("Jump") && isJumping)
         {
+            animator.SetBool("isChargeJump", false);
+            animator.SetBool("isJumping", true);
             characterAudio.PlayJumpSound();
 
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
@@ -131,6 +152,8 @@ public class Player : MonoBehaviour
 
         if (!isGrounded && canDoubleJump && Input.GetButtonDown("Jump"))
         {
+            animator.SetBool("isJumping", false);
+            animator.SetBool("isDoubleJumping", true);
             characterAudio.PlayDoubleJumpSound();
 
             float moveDirection = Input.GetAxis("Horizontal");
@@ -145,11 +168,11 @@ public class Player : MonoBehaviour
         // ชนกำแพง
         if (!isGrounded && collision.gameObject.layer == LayerMask.NameToLayer("Ground"))
         {
-            
             Vector2 contactPoint = collision.contacts[0].normal;
 
             if (Mathf.Abs(contactPoint.x) > Mathf.Abs(contactPoint.y))
             {
+                animator.SetBool("isHit", true);
                 StartCoroutine(ApplyKnockback(contactPoint));
             }
         }
@@ -160,6 +183,9 @@ public class Player : MonoBehaviour
             if (Mathf.Abs(contactPoint.x) < Mathf.Abs(contactPoint.y))
             {
                 characterAudio.PlayLandingSound();
+                animator.SetBool("isJumping", false);
+                animator.SetBool("isHit", false);
+                animator.SetBool("isDoubleJumping", false);
             }
             
             float fallDistance = highestPoint - transform.position.y;
