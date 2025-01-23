@@ -412,6 +412,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 1436788568}
   gameManager: {fileID: 1475325604}
+  moveSpeed: 2
   yMove: 0.025
 --- !u!1 &453532299
 GameObject:
@@ -1346,13 +1347,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   audioSource: {fileID: 1311798063}
-  walkSound: {fileID: 8300000, guid: 8d7732bf9e9c7844782c21b89da5dfb0, type: 3}
-  jumpSoundl: {fileID: 8300000, guid: 7d03a1181aab6a248b98c3279dbf623f, type: 3}
-  chargJumpSound: {fileID: 8300000, guid: 083184ae4b225234cb624058d8af3d5b, type: 3}
-  doubleJumpSound: {fileID: 8300000, guid: c5ff3067e0da28045807c2e44c329164, type: 3}
-  landingSound: {fileID: 8300000, guid: 93e5ff99f88784e4dabfe8cfe345b0b4, type: 3}
-  dazzlingSound: {fileID: 8300000, guid: 7c6c064992c5d304ead8138b000ccab6, type: 3}
-  bounceSound: {fileID: 8300000, guid: d6356a85c6f677548a47dbb14e702e53, type: 3}
+  walkSound: {fileID: 8300000, guid: 69702182e335607498cc9099f2d4dce2, type: 3}
+  jumpSoundl: {fileID: 8300000, guid: f2f574db5f147c547bdfb34ac3826d7d, type: 3}
+  chargJumpSound: {fileID: 8300000, guid: e3bf7417d79201f4eb48c9faa330e2fa, type: 3}
+  doubleJumpSound: {fileID: 8300000, guid: 2116bb01ee4aec149a22dbe471fdc605, type: 3}
+  landingSound: {fileID: 8300000, guid: 5a07f45d96562ad43b84e589213565a0, type: 3}
+  dazzlingSound: {fileID: 8300000, guid: f2f574db5f147c547bdfb34ac3826d7d, type: 3}
+  bounceSound: {fileID: 8300000, guid: 69702182e335607498cc9099f2d4dce2, type: 3}
 --- !u!82 &1311798063
 AudioSource:
   m_ObjectHideFlags: 0
@@ -1366,7 +1367,7 @@ AudioSource:
   m_audioClip: {fileID: 0}
   m_Resource: {fileID: 0}
   m_PlayOnAwake: 0
-  m_Volume: 0.25
+  m_Volume: 1
   m_Pitch: 1
   Loop: 0
   Mute: 0

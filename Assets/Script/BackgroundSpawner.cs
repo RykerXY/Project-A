@@ -26,11 +26,6 @@ public class BackgroundSpawner : MonoBehaviour
         offsetY = backgroundPrefab1.GetComponent<SpriteRenderer>().bounds.size.y/2;
 
         lastSpawnY = spawnY; // เริ่มต้นการสร้างจาก spawnY
-
-        for (int i = 0; i < 3; i++)  
-        {
-            SpawnBackground();
-        }
     }
 
     void Update()
