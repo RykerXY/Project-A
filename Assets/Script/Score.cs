@@ -31,4 +31,9 @@ public class Score : MonoBehaviour
             PlayerPrefs.SetFloat("Highest", Mathf.Round(highest * 100f) / 100f);
         }
     }
+
+    public int GetScore()
+    {
+        return Mathf.RoundToInt(maxHeight * 100f) / 100;
+    }
 }

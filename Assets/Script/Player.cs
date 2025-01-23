@@ -66,7 +66,7 @@ public class Player : MonoBehaviour
     {
         if (!isKnockback && !isStunned)
         {
-            float moveInput = Input.GetAxis("Horizontal");
+            float moveInput = Input.GetAxisRaw("Horizontal");
 
             //หากตัวละครเดิน
             if(moveInput >= 0.1f || moveInput <= -0.1f) 
@@ -86,14 +86,15 @@ public class Player : MonoBehaviour
                     characterAudio.StopAudio();
                 }
             }
-            if(moveInput == 0.000)
-            {
-                animator.SetBool("isMoving", false);
-            }
-            if(moveInput != 0)
+            if (moveInput != 0)
             {
                 animator.SetBool("isMoving", true);
             }
+            else
+            {
+                animator.SetBool("isMoving", false);
+            }
+
             if (Input.GetKey(KeyCode.D)) // เดินไปทางขวา
             {
                 spriteRenderer.flipX = false;
