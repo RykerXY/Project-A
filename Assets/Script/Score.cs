@@ -22,8 +22,8 @@ public class Score : MonoBehaviour
         {
             maxHeight = player.position.y; // อัพเดต maxHeight ถ้าผู้เล่นสูงขึ้น
         }
-        highestText.text = "Highest : " + Mathf.Round(highest * 100f) / 100f;
-        highText.text = "High : " + Mathf.Round(maxHeight * 100f) / 100f;
+        highestText.text = "HIGHEST : " + Mathf.Round(highest * 100f) / 100f;
+        highText.text = "HIGH : " + Mathf.Round(maxHeight * 100f) / 100f;
         
         if (maxHeight > highest)
         {

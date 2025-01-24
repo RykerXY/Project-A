@@ -2,25 +2,23 @@ using UnityEngine;
 
 public class ParallaxBackground : MonoBehaviour
 {
-    public float speed = 2f;
-    public float resetPosition = 10f; // ตำแหน่งที่พื้นหลังควรเริ่มใหม่
+    public Transform target; // ตัวละครหลักที่ใช้เป็น reference
+    public float parallaxFactor = 0.5f; // ค่าความเร็วในการเลื่อนของพื้นหลัง
 
-    private Vector3 startPosition;
+    private float startY;
 
     void Start()
     {
-        startPosition = transform.position;
+        if (target == null)
+        {
+            target = Camera.main.transform;
+        }
+        startY = target.position.y;
     }
 
     void Update()
     {
-        // เลื่อนพื้นหลังขึ้น
-        transform.Translate(Vector3.up * speed * Time.deltaTime);
-
-        // เช็คว่าพื้นหลังหลุดจากขอบแล้วหรือยัง
-        if (transform.position.y >= resetPosition)
-        {
-            transform.position = startPosition;
-        }
+        float deltaY = target.position.y - startY;
+        transform.position = new Vector3(transform.position.x, startY + deltaY * parallaxFactor, transform.position.z);
     }
 }

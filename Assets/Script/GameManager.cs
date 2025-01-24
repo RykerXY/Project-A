@@ -11,6 +11,7 @@ public class GameManager : MonoBehaviour
     public float groundHeight = 2.5f;
     private int groundCount = 0;
     public int grounStart = 0;
+    public float destroyGroundBelow = 10f;
     private List<GameObject> groundList = new List<GameObject>();
 
     public void SpawnGround() {
@@ -60,7 +61,7 @@ public class GameManager : MonoBehaviour
         for (int i = groundList.Count - 1; i >= 0; i--)
         {
             GameObject ground = groundList[i];
-            if (ground.transform.position.y < cinemachineCamera.transform.position.y - 10f) {
+            if (ground.transform.position.y < cinemachineCamera.transform.position.y - destroyGroundBelow) {
                 Debug.Log("Ground removed | Ground Count : " + groundCount);
                 Destroy(ground);
                 groundList.RemoveAt(i);
